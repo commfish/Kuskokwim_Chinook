@@ -1,12 +1,23 @@
-# Kuskokwim_Chinook
+# Kuskokwim_Chinook Run Reconstruction
 This repository contains Kuskokwim River Chinook salmon run reconstruction and SR analyses. 
 
 ## Folder Structure
 Folder is created by year that contains several subfolders: Data, Model, and Outputs.  **Note  numbers and names of folders and subfolders may differ among years to refrect changes in methodologies and data**
+* Year folder:  Contains each year's data, model, and outputs
+	* Data folder: contains data files used.
+		* Kusko_Chinook_data_lookup.csv  : This file lists abbrabiations usde data file and definition
+		* Kusko_Chinook_RR_data_yyyy.csv : This file contains harvest, escapement data used for the model 
+		* Kusko_Chinook_RR_Age_yyyy.csv  : This file contains Harvest and Escapement scale age data 
+	* Model folder: contains models used.
+	* Outputs folder: contains model results 
 
-* Data folder: contains data files used.
-* Model folder: contains models used.
+## How to update the model 
+
+* Step 1: Copy and paste previous year's folder and rename to current year 
+* Step 2: Update Data *.csv file 
 * Outputs folder: contains model results 
+
+
 
 ## How to update the repository
 1. Copy the repository via RStudio
@@ -15,6 +26,7 @@ Folder is created by year that contains several subfolders: Data, Model, and Out
 4. **Push**  to update the repository
 
 ## How to run the model 
+
 
 ## TMB (Template Model Builder)
 Required packages: Rtools, TMB, RTMB, Reshape2.  
