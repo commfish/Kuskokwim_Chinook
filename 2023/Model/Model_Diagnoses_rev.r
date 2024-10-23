@@ -8,17 +8,19 @@ par(mfrow=c(1,1),mar = c(4, 4, 1, 1))
 ############################################################################
 # 4.1 Plot Run, Escapement, 
 ############################################################################
-#windows(record=TRUE)
-#par(mfrow=c(1,1),mar = c(4, 4, 1, 1)) 
+windows(record=TRUE)
+par(mfrow=c(1,1),mar = c(4, 4, 1, 1)) 
 ny <- length(year) 
+u <- 1000
 # Plot Run 
-plot(year,(t.Run)/1000,type='o',ljoin=1,ylab = 'Drainage Run x 1000',pch=16, xaxt='n',yaxt='n',ylim=c(0,500), main='Kuskokwim Chinook Upper Escapement')
+plot(year,(t.Run)/u,type='o',ljoin=1,ylab = 'Drainage Run x 1000',pch=16, xaxt='n',yaxt='n',ylim=c(0,500), main='Kuskokwim Chinook Upper Escapement')
 # Plot 95% CI
-arrows(year,y0=Run_uci/1000,y1=Run_lci/1000,code=0)
-axis(side=2w, at = seq(0,500,by= 50),las=2) 
+arrows(year,y0=Run_uci/u,y1=Run_lci/u,code=0)
+axis(side=2, at = seq(0,500,by= 50),las=2) 
 axis(side=1, at = seq(1975,1975+ny,by= 5)) 
-arrows(year,y0=exp(log(kusko.data$tmr)+2*kusko.data$tmr.sd/kusko.data$tmr)/1000,y1=exp(log(kusko.data$tmr)-2*kusko.data$tmr.sd/kusko.data$tmr)/1000,code=0,col='red',lwd=2)
-points(year,kusko.data$tmr/1000,pch=16,col='red')
+arrows(year,y0=with(kusko.data,exp(log(In.river)+2*In.river.sd/In.river))/u,
+       y1=with(kusko.data,exp(log(In.river)-2*In.river.sd/In.river))/u,code=0,col='red',lwd=2)
+points(year,kusko.data$In.river/u,pch=16,col='red')
 # Plot Sonar 
 arrows(year,y0=exp(log(kusko.data$Sonar)+2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,y1=exp(log(kusko.data$Sonar)-2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,code=0,col='blue',lwd=2)
 points(year,kusko.data$Sonar/1000,pch=16,col='blue')

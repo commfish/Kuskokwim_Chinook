@@ -24,16 +24,16 @@ Data_dir <- file.path(Base_dir,'Data')
 create.dataset <- FALSE
 
 if(isTRUE(create.dataset)){
-data_file.1 <- 'Kusko_Chinook_RR_Input_2023.csv'
+data_file.1 <- 'Kusko_Chinook_RR_data_2023.csv'
 # Filenane for age data  
 data_file.2 <- 'Kusko_Chinook_RR_Age_2023.csv'
 # Filenane for age data  
-data_file.3 <- 'Kusko_Chinook_data_lookup.csv'
-source(file.path(Model_dir,'R_functions','Create_data.r'))
-source(file.path(Model_dir,'R_functions','Create_age_data.r'))
-
-makedata(dat,datafn)
+data_file.3 <- 'Kusko_Chinook_lookup.csv'
+source(file.path(Model_dir,'R_functions','Create_RR_data.r'))
+source(file.path(Model_dir,'R_functions','Create_RR_list_data.r'))
+#source(file.path(Model_dir,'R_functions','Create_age_data.r'))
 TMB.data <- dat
+
 }else{
 #  Read ADMB data  to list 
 TMB.data <- datatoR(datafn) 
@@ -74,16 +74,17 @@ length(phase2Init)
 
 model <- RTMB::MakeADFun(objfun,parameters,silent=FALSE);
 
+
 #'###########################################################################
 # Run the ADMB ----
 #'###########################################################################	
 # Compile model
-setwd(TMBdir)
-compile(TMB.model)
+#setwd(TMBdir)
+#compile(TMB.model)
 
-dyn.load(dynlib("Chinook_reconst_TMB"))
-model <- MakeADFun(TMB.data, parameters, DLL="Chinook_reconst_TMB", silent=FALSE) 
-fit <- nlminb(model$par, model$fn, model$gr, control = list(eval.max = 10000, iter.max=10000))
+#dyn.load(dynlib("Chinook_reconst_TMB"))
+#model <- MakeADFun(TMB.data, parameters, DLL="Chinook_reconst_TMB", silent=FALSE) 
+#fit <- nlminb(model$par, model$fn, model$gr, control = list(eval.max = 10000, iter.max=10000))
 
 
 model <- MakeADFun(TMB.data, parameters, DLL="Chinook_reconst_TMB", map=map,silent=FALSE) 

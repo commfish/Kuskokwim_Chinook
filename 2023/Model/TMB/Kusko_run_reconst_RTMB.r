@@ -5,35 +5,37 @@
 #   Date  06/14/2023         
 #   
 #'==============================================================================
-
 #'==============================================================================
 #  1.0  Initialize working Environment ----                                        
 #'==============================================================================
+rm(list=ls(all=TRUE))  # Data Clean-up 
 library(RTMB)
+library(Reshape2)
 #library(TMBdebug)
-rm(list=ls(all=TRUE))
 # Set Base directry 
-Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Hamachan')
+Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
+Year_dir <- file.path(Base_dir,'2023')
 # Specify TMB directry 
-TMBdir <- file.path(Base_dir,'TMB','Model')
+TMBdir <- file.path(Year_dir,'Model','TMB')
 # Specify Data directory 
-Data_dir <- file.path(Base_dir,'2022')
-# Install ADMB read write R source code:
-source(file.path(Base_dir,'ADMBtoR.r'))
-# Specify TMB Source file name 
-TMB.model <- 'Chinook_reconst_TMB.cpp'
-# 
-data_file <- 'Kusko_Chinook_2022.dat'
-datafn <- file.path(Data_dir,data_file)
-# Create data set?
-create.dataset <- FALSE
-if(isTRUE(create.dataset)){
-data_file1 <- 'Kusko_RR_Input_Oct_2022.csv'
+Datadir <- file.path(Year_dir,'Data')
+#'==============================================================================
+#  1.1  Data file Names  ----                                        
+#'==============================================================================
+rr_data <- 'Kusko_Chinook_data_2023.csv'
 # Filenane for age data  
-data_file2 <- 'Kusko_RR_Age_Oct_2022.csv'
+age_data <- 'Kusko_Chinook_RR_Age_2023.csv'
 # Filenane for age data  
-data_file3 <- 'Kusko_data_lookup.csv'
-source(file.path(Base_dir,'Kusko_Create_data.r'))
+look_up_data <- 'Kusko_Chinook_lookup.csv'
+
+#'==============================================================================
+#  1.2  Read Data to TMB  ----                                        
+#'==============================================================================
+# Read RR data 
+source(file.path(Year_dir,'Model','R_functions','ADMBtoR.r'))
+
+
+
 makedata(dat,datafn)
 TMB.data <- dat
 }else{
@@ -41,6 +43,8 @@ TMB.data <- dat
 TMB.data <- datatoR(datafn) 
 }
 
+# Install ADMB read write R source code:
+source(file.path(Year_dir,'Model','R_functions','ADMBtoR.r'))
 
 
 TMB.data$nyear <- with(TMB.data,lyear-fyear+1)
