@@ -13,10 +13,11 @@
 rm(list=ls(all=TRUE))
 library(RTMB)
 # Set Base dirctory (May not be needed when running via Rstudio
-#Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
+Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
 # set this Year 
 this.year <- 2023
-Base_dir <- file.path('.', this.year)
+Base_dir <- file.path(Base_dir, this.year)
+#Base_dir <- file.path('.', this.year)
 # Set Base directry 
 # Specify TMB directry 
 Model_dir <- file.path(Base_dir,'Model')
@@ -36,18 +37,23 @@ rr_data <- 'Kusko_Chinook_RR_Input_2023.csv'
 look_up_data <- 'Kusko_Chinook_lookup.csv'
 # Model output 
 models <- c('Chinook_RR_output_1.csv', 'Chinook_RR_output_3.csv')
-
+nmodel <- length(models)
 # Read to R file 
 kusko.data <- read.csv(file.path(Data_dir,rr_data),header=TRUE, na.string='')
 lookup <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
+output <- list()
+for(i in nmodel){
+output[[i]] <- read.csv(file.path(Out_dir,models[[i]]),header=TRUE, na.string='')
+}
 
-output <- read.csv(file.path(Out_dir,model_output_data),header=TRUE, na.string='')
+
 #'------------------------------------------------------------------------------
 #'------------------------------------------------------------------------------
 # Extract RTMB  Estimates ----
 #'------------------------------------------------------------------------------
 year <- kusko.data$Year
 nyear <- length(year)
+
 t.run <- output[substr(output$X,1,5)=='t_run',]
 t.esc <- output[substr(output$X,1,5)=='t_esc',]
 log.trun <- output[substr(output$X,1,8)=='log_trun',]

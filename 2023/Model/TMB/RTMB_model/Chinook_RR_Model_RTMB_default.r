@@ -24,7 +24,7 @@ Chinook_RR_Model_RTMB_default <- function(params){
   newier <- dim(w_esc)[1] # Pitka fork weir not included. 
   newier <- dim(a_esc)[1]
 # Set temprary vector and initialize to 0
-  esc <- rep(0,nyear)
+  t_esc <- rep(0,nyear)
   tfw <- rep(0,nweir)  # Weir likelihood
   tfa <- rep(0,naerial) # Aerial likelihood
   tfc <- rep(0,2)  # Com catch likelihood
@@ -36,7 +36,7 @@ Chinook_RR_Model_RTMB_default <- function(params){
 #==============================================================================
 for(i in 1:nyear)
    {
-     esc[i] <- t_run[i]-tcatch[i];	   
+     t_esc[i] <- t_run[i]-tcatch[i];	   
 #===  Total Run ==============================================================     	   
 # Total run 
   if(inriv[i]>0)
@@ -50,7 +50,7 @@ for(i in 1:nyear)
     {
 	if(w_esc[j,i]>0) 
      {	 
-      tfw[j] <- tfw[j] - dnorm(log(w_esc[j,i]),log(esc[i]/wesc[j]),sd2,TRUE) 
+      tfw[j] <- tfw[j] - dnorm(log(w_esc[j,i]),log(t_esc[i]/wesc[j]),sd2,TRUE) 
      } 
     }
   for(j in 1:naerial)
@@ -58,7 +58,7 @@ for(i in 1:nyear)
 # Aerial escapement 
 	if(a_esc[j,i]>0) 
      {
-      tfa[j] <- tfa[j] - dnorm(log(a_esc[j,i]),log(esc[i]/aesc[j]),sd3,TRUE) 
+      tfa[j] <- tfa[j] - dnorm(log(a_esc[j,i]),log(t_esc[i]/aesc[j]),sd3,TRUE) 
      }  	 
    }     
 #'===  CPUE ====================================================================   
@@ -78,7 +78,7 @@ for(i in 1:nyear)
 # 3.0   REPORT_SECTION
 #'------------------------------------------------------------------------------
   ADREPORT(t_run)
-  ADREPORT(esc)
+  ADREPORT(t_esc)
   REPORT(f)
   REPORT(tfw)
   REPORT(tfa)

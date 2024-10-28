@@ -1,7 +1,5 @@
-Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
-# set this Year 
 this.year <- 2023
-Base_dir <- file.path(Base_dir,this.year)
+Base_dir <- file.path('.', this.year)
 # Set Base directry 
 # Specify TMB directry 
 Model_dir <- file.path(Base_dir,'Model')
@@ -9,16 +7,32 @@ Model_dir <- file.path(Base_dir,'Model')
 Data_dir <- file.path(Base_dir,'Data')
 # Specify Ouptput directory
 Out_dir <- file.path(Base_dir,'Outputs')
+# Install ADMB read write R source code:
+source(file.path(Model_dir,'R_functions','ADMBtoR.r'))
+source(file.path(Model_dir,'R_functions','TMB_functions.r')) # Needed to run RTMB
+#'------------------------------------------------------------------------------
+#'  Set Input data (Update every year)
+#'------------------------------------------------------------------------------
+# RR Input data 
+rr_data <- 'Kusko_Chinook_RR_Input_2023.csv'  
+# Age Input data  (Used to create Brood table)
+age_data <- 'Kusko_Chinook_RR_age_2023.csv'
+# Used to make model 
+look_up_data <- 'Kusko_Chinook_lookup.csv'
+# Model output  
+model_output_data <- 'Chinook_RR_output_3.csv'
 
-kusko.data <- read.csv(file.path(Data_dir,'Kusko_Chinook_RR_Input_2023.csv'),header=TRUE, na.string='')
-model.results<-read.csv(file.path(Out_dir,'Kusko_Chinook_RR_output_2023.csv'),header=TRUE, na.string='') #run reconstrucion model results
-lookup <- read.csv(file.path(Data_dir,'Kusko_Chinook_lookup.csv'),header=TRUE, na.string='')
+# Read to R file 
+kusko.data <- read.csv(file.path(Data_dir,rr_data),header=TRUE, na.string='')
+age_data <- read.csv(file.path(Data_dir,age_data),header=TRUE, na.string='')
+lookup <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
+model.results <- read.csv(file.path(Out_dir,model_output_data),header=TRUE, na.string='')
 ###############################################################################
 # Data creation 
 ##############################################################################
 Year <- kusko.data$Year
 t.run <- model.results[substr(model.results$X,1,5)=='t_run',]
-t.esc <- model.results[substr(model.results$X,1,3)=='esc',]
+t.esc <- model.results[substr(model.results$X,1,5)=='t_esc',]
 log.trun <- model.results[substr(model.results$X,1,8)=='log_trun',]
 w.esc <- model.results[substr(model.results$X,1,8)=='log_wesc',]
 a.esc <- model.results[substr(model.results$X,1,8)=='log_aesc',]
@@ -39,7 +53,7 @@ scl <- c(w.esc$Estimate,a.esc$Estimate)
 
 
 par(family="serif") #set font to Times New Roman
-ny <- length(kusko.data[,1]) # of run size estimates
+ny <- length(Year) # of run size estimates
 u <- 1000
 
 ###############################################################################
@@ -51,13 +65,18 @@ par(mfrow=c(1,1),mar = c(4, 4, 1, 1))
 
 plot(Year,Run/u,type='o',ljoin=1,ylab = 'Total Run x 1,000',pch=16,yaxt='n', xlab="Year",
       xaxt='n',ylim=c(0,550))
-arrows(Year,y0= UCIRun[1:ny]/u,y1=LCIRun[1:ny]/u,code=0)
+arrows(Year,y0= UCIRun/u,y1=LCIRun/u,code=0)
 axis(side=2, at = seq(0,550,by= 50),las=2) 
 axis(side=1, at = seq(min(Year),max(Year),by= 2),las=2) 
 points(Year,(kusko.data[,'In.river']/u),pch=16,col="azure4")
 arrows(Year,y0=((kusko.data[,'In.river'])+2*kusko.data[,'In.river.sd'])/u,y1=((kusko.data[,'In.river'])-2*kusko.data[,'In.river.sd'])/u,code=0,
        col="azure4",lwd=2)
 arrows(Year,y0=UCIEsc/u,y1=LCIEsc[1:ny]/u,code=0, col=1,lty=5)
+# Add Sonar counts
+points(Year,(rowSums(kusko.data[,c('sonar','H.Com','H.Sub.l')])/u),pch=16,col="azure4")
+arrows(Year,y0=(rowSums(kusko.data[,c('sonar','H.Com','H.Sub.l')])+2*kusko.data[,'sonar.sd'])/u,y1=(rowSums(kusko.data[,c('sonar','H.Com','H.Sub.l')])-2*kusko.data[,'sonar.sd'])/u,code=0, col="azure4",lwd=2)
+arrows(Year,y0=UCIEsc/u,y1=LCIEsc[1:ny]/u,code=0, col=1,lty=5)
+
 lines(Year,Esc/u,type='o',ljoin=1,pch=21,col=1,bg='white',lty=5)
 legend('topright',legend=c('Run','Escapement','In River Run Estimate'), 
        lty=c(1,5,1),pch=c(16,21,16),col=c(1,1,"azure4"), bg=

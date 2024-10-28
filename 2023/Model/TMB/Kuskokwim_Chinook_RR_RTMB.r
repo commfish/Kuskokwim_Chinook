@@ -3,7 +3,7 @@
 #  Kuskokwim Chinook Salmon Run Reconstruction R-code RTMB Implementation 
 #  This model runs the RTMB version of the Kuskokwim Run reconstruction model 
 #   Written by  H. Hamaazaki 
-#   Date  04/30/2024         
+#   Date  10/25/2024         
 #   # Requirement 
 #   # Install Rtool
 #	# Install Packages TMB, RTMB
@@ -15,10 +15,10 @@
 rm(list=ls(all=TRUE))
 library(RTMB)
 # Set Base dirctory (May not be needed when running via Rstudio
-Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
+#Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
 # set this Year 
 this.year <- 2023
-Base_dir <- file.path(Base_dir,this.year)
+Base_dir <- file.path('.', this.year)
 # Set Base directry 
 # Specify TMB directry 
 Model_dir <- file.path(Base_dir,'Model')
@@ -28,32 +28,29 @@ Data_dir <- file.path(Base_dir,'Data')
 Out_dir <- file.path(Base_dir,'Outputs')
 # Install ADMB read write R source code:
 source(file.path(Model_dir,'R_functions','ADMBtoR.r'))
-
+source(file.path(Model_dir,'R_functions','TMB_functions.r')) # Needed to run RTMB
 #'------------------------------------------------------------------------------
-#'  Input data  
+#'  Set Input data (Update every year)
 #'------------------------------------------------------------------------------
-
-rr_data <- 'Kusko_Chinook_RR_Input_2023.csv'
+# RR Input data 
+rr_data <- 'Kusko_Chinook_RR_Input_2023.csv'  
+# Age Input data  (Used to create Brood table)
 age_data <- 'Kusko_Chinook_RR_age_2023.csv'
+# Used to make model 
 look_up_data <- 'Kusko_Chinook_lookup.csv'
+# Read to R file 
 kusko.data <- read.csv(file.path(Data_dir,rr_data),header=TRUE, na.string='')
 age_data <- read.csv(file.path(Data_dir,age_data),header=TRUE, na.string='')
-look_up_data <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
+lookup <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
 #'------------------------------------------------------------------------------
 
-create.dataset <- TRUE
-if(isTRUE(create.dataset)){
+#'------------------------------------------------------------------------------
+# Create data for RTMB
 source(file.path(Model_dir,'R_functions','Create_RR_data.r'))
-dat <- make_RR_Model_data(kusko.data)
-# Filename for age data  
+TMB.data <- make_RR_Model_data(kusko.data)
+# Plot data distribution 
 #source(file.path(Model_dir,'R_functions','Create_data_plot.r'))
-#source(file.path(Model_dir,'R_functions','Create_age_data.r'))
-makedata(dat,datafn)
-TMB.data <- dat
-}else{
-#  Read ADMB data  to list 
-TMB.data <- datatoR(datafn) 
-}
+
 nyear <- with(TMB.data, lyear-fyear+1)
 nweir <- dim(TMB.data$w_esc)[1]
 naerial <- dim(TMB.data$a_esc)[1]
@@ -76,7 +73,7 @@ log_aesc = rep(7.0,naerial),log_cvw = 1.0, log_cva=1.0, log_q = rep(-9,2),log_cv
 #'------------------------------------------------------------------------------
 # Run the RTMB  ----
 #'------------------------------------------------------------------------------
-source(file.path(Model_dir,'TMB','Chinook_RR_Model_RTMB_default.r'))
+source(file.path(Model_dir,'TMB','RTMB_model','Chinook_RR_Model_RTMB_default.r'))
 fit <- runRTMB(TMB.data,Chinook_RR_Model_RTMB_default,parameters,p.upper,p.lower) 
 #'End default model Run --------------------------------------------------------
 # Compile model
@@ -104,7 +101,7 @@ log_cvq = 1.0,log_fl = rep(5.0, nyear), log_fu = rep(5.0,nyear))
 #'------------------------------------------------------------------------------
 # Run the RTMB  ----
 #'------------------------------------------------------------------------------
-source(file.path(Model_dir,'TMB','Chinook_RR_Model_RTMB_default_rev.r'))
+source(file.path(Model_dir,'TMB','RTMB_model','Chinook_RR_Model_RTMB_default_rev.r'))
 fit <- runRTMB(TMB.data,Chinook_RR_Model_RTMB_default_rev,parameters,p.upper,p.lower) 
 #'End default model Run --------------------------------------------------------
 # Compile model
@@ -117,27 +114,68 @@ write.csv(par1,file.path(Out_dir,'Chinook_RR_output_2.csv'))
 #'------------------------------------------------------------------------------
 #  Set Pamateter inital, upper, and lower bounds                                     
 #'------------------------------------------------------------------------------
-parameters <- list(log_trun=rep(12.5,nyear), log_wesc=rep(5.0,nweir), 
-log_aesc = rep(4.0,naerial), log_cvw = 0.5, log_cva=0.5,log_q = rep(-11,2), 
-log_cvq = 0.5,mq = 0.25, log_fl = rep(1.0, nyear), log_fu = rep(2.0,nyear))
-p.lower <- c(log_trun=TMB.data$minrun, log_wesc=rep(0.0,nweir), 
+parameters <- list(log_rrun=rep(12.5,nyear), log_wesc=rep(5.0,nweir), 
+log_aesc = rep(4.0,naerial), log_cvw = log(0.5), log_cva=log(0.5),log_q = rep(-11,2), 
+log_cvq = log(0.5),mq = 0.25, log_fl = rep(1.0, nyear), log_fu = rep(2.0,nyear))
+p.lower <- c(log_rrun=log(TMB.data$minrun), log_wesc=rep(0.0,nweir), 
 log_aesc = rep(0.0,naerial), log_cvw = -10.0, log_cva=-10.0,log_q = rep(-12,2), 
 log_cvq = -10.0,mq=0.1,log_fl = rep(-10.0, nyear), log_fu = rep(-10.0,nyear))
-p.upper <- c(log_trun=rep(13.5,nyear), log_wesc=rep(7.0,nweir), 
+p.upper <- c(log_rrun=rep(13.5,nyear), log_wesc=rep(7.0,nweir), 
 log_aesc = rep(7.0,naerial),log_cvw = 1.0, log_cva=1.0, log_q = rep(-9,2), 
 log_cvq = 1.0,mq=0.5,log_fl = rep(5.0, nyear), log_fu = rep(5.0,nyear))
 
 #'------------------------------------------------------------------------------
 # Run the RTMB  ----
 #'------------------------------------------------------------------------------
-source(file.path(Model_dir,'TMB','Chinook_RR_Model_RTMB_New.r'))
+source(file.path(Model_dir,'TMB','RTMB_model','Chinook_RR_Model_RTMB_New.r'))
 fit <- runRTMB(TMB.data,Chinook_RR_Model_RTMB_New,parameters,p.upper,p.lower) 
 #'End default model Run --------------------------------------------------------
-
 rep <- sdreport(fit)
 par1 <-as.data.frame(summary(rep))
 names(par1)[2] <- 'Std.Error'
 write.csv(par1,file.path(Out_dir,'Chinook_RR_output_3.csv'))
+
+#'------------------------------------------------------------------------------
+# Run the RTMB  Jitter Analyses ---
+# Jitter analyses starts from different values and see the model conversion 
+#
+#'------------------------------------------------------------------------------
+p.lower <- c(log_trun=log(TMB.data$minrun), log_wesc=rep(0.0,nweir), 
+log_aesc = rep(0.0,naerial), log_cvw = -10.0, log_cva=-10.0,log_q = rep(-12,2), 
+log_cvq = -10.0,mq=0.1,log_fl = rep(-10.0, nyear), log_fu = rep(-10.0,nyear))
+p.upper <- c(log_rrun=rep(13.5,nyear), log_wesc=rep(7.0,nweir), 
+log_aesc = rep(7.0,naerial),log_cvw = 1.0, log_cva=1.0, log_q = rep(-9,2), 
+log_cvq = 1.0,mq=0.5,log_fl = rep(5.0, nyear), log_fu = rep(5.0,nyear))
+
+for(i in 1:100){
+parameters <- list(log_trun=rep(12.5,nyear), log_wesc=rep(5.0,nweir), 
+log_aesc = rep(4.0,naerial), log_cvw = log(0.5), log_cva=log(0.5),log_q = rep(-11,2), 
+log_cvq = log(0.5),mq = 0.25, log_fl = rep(1.0, nyear), log_fu = rep(2.0,nyear))
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -159,12 +197,12 @@ mq <- par1[substr(row.names(par1),1,2)=='mq',1]
 fl <- par1[substr(row.names(par1),1,6)=='log_fl',1]
 fu <- par1[substr(row.names(par1),1,6)=='log_fu',1]
 
-t.Run <- t.run$Estimate[(nyear+1):(2*nyear)]
-Run_uci <- with(log.trun, exp(Estimate+2*Std.Error))[(nyear+1):(2*nyear)]
-Run_lci <- with(log.trun, exp(Estimate-2*Std.Error))[(nyear+1):(2*nyear)]
-esc <- t.esc$Estimate[(nyear+1):(2*nyear)]
-esc_uci <- with(t.esc, exp(log(Estimate)+2*(Std.Error/Estimate)))[(nyear+1):(2*nyear)]
-esc_lci <- with(t.esc, exp(log(Estimate)-2*(Std.Error/Estimate)))[(nyear+1):(2*nyear)]
+t.Run <- t.run$Estimate
+Run_uci <- with(log.trun, exp(Estimate+2*Std.Error))
+Run_lci <- with(log.trun, exp(Estimate-2*Std.Error))
+esc <- t.esc$Estimate
+esc_uci <- with(t.esc, exp(log(Estimate)+2*(Std.Error/Estimate)))
+esc_lci <- with(t.esc, exp(log(Estimate)-2*(Std.Error/Estimate)))
 
 
 #####################################################################################################
