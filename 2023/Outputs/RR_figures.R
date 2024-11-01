@@ -49,9 +49,7 @@ CV <- t.run$Std.Error/t.run$Estimate
 
 prj.names <- names(kusko.data)[substr(names(kusko.data),1,2) %in% c('a.','w.')]
 esc.name <- lookup$Label[lookup$CSV %in% prj.names]
-scl <- c(w.esc$Estimate,a.esc$Estimate) 
-
-
+ 
 par(family="serif") #set font to Times New Roman
 ny <- length(Year) # of run size estimates
 u <- 1000

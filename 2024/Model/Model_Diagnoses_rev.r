@@ -1,32 +1,92 @@
-############################################################################
-#    Standard Model Diagnostics 
-############################################################################
-##### Set graphing parameter ###############################################
-windows(record=TRUE)
-par(mfrow=c(1,1),mar = c(4, 4, 1, 1))  
+#'==============================================================================
+#  Kuskokwim_Chinook_RR_RTMB_Model_Diagnoes.R
+#  This program reads RTMB model ouptputs and plot 
+#   Written by  H. Hamaazaki 
+#   Date  10/25/2024         
+#   # Requirement 
+#   # Install Rtool
+#	# Install Packages TMB, RTMB
+#'==============================================================================
+#'==============================================================================
+#  1.0  Initialize working Environment ----                                        
+#'==============================================================================
+rm(list=ls(all=TRUE))
+library(RTMB)
+# Set Base dirctory (May not be needed when running via Rstudio
+#Base_dir <- file.path('C:','Projects','Kuskokwim_River','Chinook_reconst','Kuskokwim_Chinook')
+# set this Year 
+this.year <- 2023
+Base_dir <- file.path('.', this.year)
+# Set Base directry 
+# Specify TMB directry 
+Model_dir <- file.path(Base_dir,'Model')
+# Specify Data directory 
+Data_dir <- file.path(Base_dir,'Data')
+# Specify Ouptput directory
+Out_dir <- file.path(Base_dir,'Outputs')
+# Install ADMB read write R source code:
+source(file.path(Model_dir,'R_functions','ADMBtoR.r'))
+source(file.path(Model_dir,'R_functions','TMB_functions.r')) # Needed to run RTMB
+#'------------------------------------------------------------------------------
+#'  Set Input data (Update every year)
+#'------------------------------------------------------------------------------
+# RR Input data 
+rr_data <- 'Kusko_Chinook_RR_Input_2023.csv'  
+# Used to make model 
+look_up_data <- 'Kusko_Chinook_lookup.csv'
+# Model output 
+models <- c('Chinook_RR_output_1.csv', 'Chinook_RR_output_3.csv')
+
+# Read to R file 
+kusko.data <- read.csv(file.path(Data_dir,rr_data),header=TRUE, na.string='')
+lookup <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
+
+output <- read.csv(file.path(Out_dir,model_output_data),header=TRUE, na.string='')
+#'------------------------------------------------------------------------------
+#'------------------------------------------------------------------------------
+# Extract RTMB  Estimates ----
+#'------------------------------------------------------------------------------
+year <- kusko.data$Year
+nyear <- length(year)
+t.run <- output[substr(output$X,1,5)=='t_run',]
+t.esc <- output[substr(output$X,1,5)=='t_esc',]
+log.trun <- output[substr(output$X,1,8)=='log_trun',]
+w.esc <- output[substr(output$X,1,8)=='log_wesc',]
+a.esc <- output[substr(output$X,1,8)=='log_aesc',]
+q.cpue <- output[substr(output$X,1,5)=='log_q',]
+cv <- output[substr(output$X,1,6)=='log_cv',]
+#rept <- fit$report()
+qs <- output[substr(output$X,1,2)=='qs',1]
+mq <- output[substr(output$X,1,2)=='mq',1]
+
+fl <- output[substr(output$X,1,6)=='log_fl',1]
+fu <- output[substr(output$X,1,6)=='log_fu',1]
+
+t.Run <- t.run$Estimate
+Run_uci <- with(log.trun, exp(Estimate+2*Std.Error))
+Run_lci <- with(log.trun, exp(Estimate-2*Std.Error))
+esc <- t.esc$Estimate
+esc_uci <- with(t.esc, exp(log(Estimate)+2*(Std.Error/Estimate)))
+esc_lci <- with(t.esc, exp(log(Estimate)-2*(Std.Error/Estimate)))
 
 ############################################################################
 # 4.1 Plot Run, Escapement, 
 ############################################################################
-#windows(record=TRUE)
-#par(mfrow=c(1,1),mar = c(4, 4, 1, 1)) 
-ny <- length(year) 
-# Plot Run 
-plot(year,(t.Run)/1000,type='o',ljoin=1,ylab = 'Drainage Run x 1000',pch=16, xaxt='n',yaxt='n',ylim=c(0,500), main='Kuskokwim Chinook Upper Escapement')
-# Plot 95% CI
-arrows(year,y0=Run_uci/1000,y1=Run_lci/1000,code=0)
-axis(side=2w, at = seq(0,500,by= 50),las=2) 
-axis(side=1, at = seq(1975,1975+ny,by= 5)) 
-arrows(year,y0=exp(log(kusko.data$tmr)+2*kusko.data$tmr.sd/kusko.data$tmr)/1000,y1=exp(log(kusko.data$tmr)-2*kusko.data$tmr.sd/kusko.data$tmr)/1000,code=0,col='red',lwd=2)
-points(year,kusko.data$tmr/1000,pch=16,col='red')
-# Plot Sonar 
-arrows(year,y0=exp(log(kusko.data$Sonar)+2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,y1=exp(log(kusko.data$Sonar)-2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,code=0,col='blue',lwd=2)
-points(year,kusko.data$Sonar/1000,pch=16,col='blue')
+u <- 1000
+##### Set graphing parameter ########################################################################
+windows(record=TRUE)
+par(mfrow=c(1,1),mar = c(4, 4, 1, 1))  
+plot(year,t.Run/u,type='o',ljoin=1,ylab = 'Total run x 1000',pch=16,yaxt='n', xaxt='n',ylim=c(0,550))
+    arrows(year,y0= Run_uci/u,y1=Run_lci/u,code=0)
+#: yaxt = 'n'  do not plot the y-axis 
+axis(side=2, at = seq(0,550,by= 50),las=2) 
+axis(side=1, at = with(dat,seq(fyear,lyear,by= 5))) 
+points(year,with(kusko.data,In.river/u),pch=16,col='red')
+arrows(year,y0=with(kusko.data,In.river+2*In.river.sd)/u,y1=with(kusko.data,In.river-2*In.river.sd)/u,code=0,col='red',lwd=2)
+arrows(year,y0=esc_uci/u,y1=esc_lci/u,code=0, col=1,lty=5)
+lines(year,esc/u,type='o',ljoin=1,pch=21,yaxt='n', xaxt='n',col=1,bg='white',lty=5)
+legend('topright',legend=c('Run','Escapement','In River Run estimate'), lty=c(1,5,1),pch=c(16,21,16),col=c(1,1,2), bg='white', bty ='n')
 
-# Plot Escapement
-arrows(year,y0=Esc_uci/1000,y1=Esc_lci/1000,code=0, col= 4)
-lines(year,(Esc$value)/1000,type='o',ljoin=1,pch=16, col=4)
-legend('topright',legend=c('Run','Escapement','Lower MR'), lty=c(1,1,1),pch=c(16,16,16),col=c(1,4,2), bg='white', bty ='n')
 
 
 ############################################################################
@@ -64,10 +124,10 @@ plot(year,(P.exp),type='o',ljoin=1,ylab = 'Run Harvest Rate',pch=16,ylim=c(0,1),
 # 4.3 Run / Escapement Dignoses 
 ############################################################################
 # Get Weir and Aerial parameters
-weir <- c(exp(par1[which(par1$name=='log_lwesc'),3]),exp(par1[which(par1$name=='log_uwesc'),3]))
-aerial <- c(exp(par1[which(par1$name=='log_laesc'),3]),exp(par1[which(par1$name=='log_uaesc'),3]))
-sq <- c((par1[which(par1$name=='sq'),3]))
-mq <- c((par1[which(par1$name=='mq'),3]))
+weir <- c(exp(output[which(output$name=='log_lwesc'),3]),exp(output[which(output$name=='log_uwesc'),3]))
+aerial <- c(exp(output[which(output$name=='log_laesc'),3]),exp(output[which(output$name=='log_uaesc'),3]))
+sq <- c((output[which(output$name=='sq'),3]))
+mq <- c((output[which(output$name=='mq'),3]))
 par(mfrow=c(5,5),mar = c(1.75,1.5,1.5,1.75),oma = c(3,3,3,3),cex=0.6) 
 # Lower MR
 x <-kusko.data$tmr
@@ -144,7 +204,7 @@ mtext("Observed", side = 1, line = 1, outer = TRUE)
 # 4.4 Fit to Fishery Data 
 ############################################################################
 ###### Create Expected Weekly ##############################################
-q <- c(exp(par1[which(par1$name=='log_q'),3]))
+q <- c(exp(output[which(output$name=='log_q'),3]))
   cpue <- as.matrix(ccat/ceff)
 # Observed Run proporion adjusted cpue 
   cpue_N <- as.matrix(ccat/ceff/testf[,3:8])

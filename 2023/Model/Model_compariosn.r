@@ -41,11 +41,6 @@ nmodel <- length(models)
 # Read to R file 
 kusko.data <- read.csv(file.path(Data_dir,rr_data),header=TRUE, na.string='')
 lookup <- read.csv(file.path(Data_dir,look_up_data),header=TRUE, na.string='')
-output <- list()
-for(i in nmodel){
-output[[i]] <- read.csv(file.path(Out_dir,models[[i]]),header=TRUE, na.string='')
-}
-
 
 #'------------------------------------------------------------------------------
 #'------------------------------------------------------------------------------
@@ -53,7 +48,7 @@ output[[i]] <- read.csv(file.path(Out_dir,models[[i]]),header=TRUE, na.string=''
 #'------------------------------------------------------------------------------
 year <- kusko.data$Year
 nyear <- length(year)
-
+dataout <- function(output){
 t.run <- output[substr(output$X,1,5)=='t_run',]
 t.esc <- output[substr(output$X,1,5)=='t_esc',]
 log.trun <- output[substr(output$X,1,8)=='log_trun',]
@@ -61,69 +56,49 @@ w.esc <- output[substr(output$X,1,8)=='log_wesc',]
 a.esc <- output[substr(output$X,1,8)=='log_aesc',]
 q.cpue <- output[substr(output$X,1,5)=='log_q',]
 cv <- output[substr(output$X,1,6)=='log_cv',]
-#rept <- fit$report()
-qs <- output[substr(output$X,1,2)=='qs',1]
-mq <- output[substr(output$X,1,2)=='mq',1]
-
-fl <- output[substr(output$X,1,6)=='log_fl',1]
-fu <- output[substr(output$X,1,6)=='log_fu',1]
-
+mq <- output[substr(output$X,1,2)=='mq',]
+fl <- output[substr(output$X,1,6)=='log_fl',]
+fu <- output[substr(output$X,1,6)=='log_fu',]
 t.Run <- t.run$Estimate
 Run_uci <- with(log.trun, exp(Estimate+2*Std.Error))
 Run_lci <- with(log.trun, exp(Estimate-2*Std.Error))
+Run <- data.frame(t.Run,Run_uci,Run_lci)
 esc <- t.esc$Estimate
 esc_uci <- with(t.esc, exp(log(Estimate)+2*(Std.Error/Estimate)))
 esc_lci <- with(t.esc, exp(log(Estimate)-2*(Std.Error/Estimate)))
+Esc <- data.frame(esc,esc_uci,esc_lci)
+out <- list(Run=Run,Esc=Esc,w.esc=w.esc,a.esc=esc,q.cpue=q.cpue,mq=mq,fl=fl,fu=fu)
+return(out)
+}
+pars <- list()
+for(i in 1:nmodel){
+output <- read.csv(file.path(Out_dir,models[[i]]),header=TRUE, na.string='')
+pars[[i]] <-dataout(output)
+
+}
+
+
 
 ############################################################################
 # 4.1 Plot Run, Escapement, 
 ############################################################################
 u <- 1000
+palette("Okabe-Ito")
 ##### Set graphing parameter ########################################################################
 windows(record=TRUE)
 par(mfrow=c(1,1),mar = c(4, 4, 1, 1))  
-plot(year,t.Run/u,type='o',ljoin=1,ylab = 'Total run x 1000',pch=16,yaxt='n', xaxt='n',ylim=c(0,550))
-    arrows(year,y0= Run_uci/u,y1=Run_lci/u,code=0)
-#: yaxt = 'n'  do not plot the y-axis 
-axis(side=2, at = seq(0,550,by= 50),las=2) 
-axis(side=1, at = with(dat,seq(fyear,lyear,by= 5))) 
+plot(year,pars[[1]]$Run$t.Run/u,type='n',ylab = 'Total run x 1000',xlab='year',ylim=c(0,550))
+for(i in 1:nmodel){
+lines(year,pars[[i]]$Run$t.Run/u,lwd=2,col=i+1) 
+polygon(c(year,rev(year)),c(pars[[i]]$Run$Run_uci,rev(pars[[i]]$Run$Run_lci))/u,col=tcol(i+1,80),border=NA)
+lines(year,pars[[i]]$Esc$esc/u,lwd=2,lty=2,col=i+1) 
+polygon(c(year,rev(year)),c(pars[[i]]$Esc$esc_uci,rev(pars[[i]]$Esc$esc_lci))/u,col=tcol(i+1,80),border=NA)
+}
 points(year,with(kusko.data,In.river/u),pch=16,col='red')
 arrows(year,y0=with(kusko.data,In.river+2*In.river.sd)/u,y1=with(kusko.data,In.river-2*In.river.sd)/u,code=0,col='red',lwd=2)
-arrows(year,y0=esc_uci/u,y1=esc_lci/u,code=0, col=1,lty=5)
-lines(year,esc/u,type='o',ljoin=1,pch=21,yaxt='n', xaxt='n',col=1,bg='white',lty=5)
-legend('topright',legend=c('Run','Escapement','In River Run estimate'), lty=c(1,5,1),pch=c(16,21,16),col=c(1,1,2), bg='white', bty ='n')
-
-
-
-############################################################################
-# 4.1.1 Plot Upper Escapement & MR
-############################################################################
-# Plot Run 
-plot(year,(rept$up_esc)/1000,type='o',ljoin=1,ylab = 'Upper Escapement x 1000',pch=16, xaxt='n',yaxt='n',ylim=c(0,500), main='Kuskokwim Chinook')
-# Plot 95% CI
-axis(side=2, at = seq(0,500,by= 50),las=2) 
-axis(side=1, at = seq(1975,1975+ny,by= 5)) 
-arrows(year,y0=exp(log(kusko.data$mr)+2*kusko.data$mr.sd/kusko.data$mr)/1000,y1=exp(log(kusko.data$mr)-2*kusko.data$mr.sd/kusko.data$mr)/1000,code=0,col='red',lwd=2)
-points(year,kusko.data$mr/1000,pch=16,col='red')
-legend('topright',legend=c('Upper Escapement','Upper MR'), lty=c(1,1),pch=c(16,16),col=c(1,2), bg='white', bty ='n')
-
-############################################################################
-# 4.1.2 Plot Lower Run and Sonar 
-############################################################################
-# Plot Run 
-plot(year,(rept$low_run)/1000,type='o',ljoin=1,ylab = 'Lower Run x 1000',pch=16, xaxt='n',yaxt='n',ylim=c(0,500), main='Kuskokwim Chinook')
-# Plot 95% CI
-axis(side=2, at = seq(0,500,by= 50),las=2) 
-axis(side=1, at = seq(1975,1975+ny,by= 5)) 
-# Plot Sonar 
-arrows(year,y0=exp(log(kusko.data$Sonar)+2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,y1=exp(log(kusko.data$Sonar)-2*kusko.data$Sonar.sd/kusko.data$Sonar)/1000,code=0,col='blue',lwd=2)
-points(year,kusko.data$Sonar/1000,pch=16,col='blue')
-legend('topright',legend=c('Lower Run','Sonar '), lty=c(1,1),pch=c(16,16),col=c(1,2), bg='white', bty ='n')
-
-############################################################################
-# 4.2 Plot Harvest rate
-############################################################################
-plot(year,(P.exp),type='o',ljoin=1,ylab = 'Run Harvest Rate',pch=16,ylim=c(0,1),main='Kuskokwim Chinook Harvest Rate')
+points(year,with(kusko.data,(sonar+H.Com+H.Sub.l)/u),pch=16,col='blue')
+arrows(year,y0=with(kusko.data,(sonar+H.Com+H.Sub.l)+2*sonar.sd)/u,y1=with(kusko.data,(sonar+H.Com+H.Sub.l)-2*sonar.sd)/u,code=0,col='blue',lwd=2)
+legend('topright',legend=c('Run','Escapement','In River Run estimate','Sonar+lower Harvest'), lty=c(1,2,1,1),pch=c(NA,NA,19,19),col=c(1,1,'red','blue'), bg='white', bty ='n')
 
 
 ############################################################################
